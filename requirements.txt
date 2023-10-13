@@ -1,0 +1,5 @@
+erniebot==0.3.1
+moviepy
+pydub
+PyPDF2==2
+pdfminer
