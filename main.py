@@ -28,9 +28,6 @@ def chat_python(file, need):
   codes = re.findall(r'```.*\n([^犭]*?)\n```', answer, flags=re.M)
   python_code = None
   for code in codes:
-    if 'pip install' in code:
-      print(f'【id_{id}】install------------------', code, flush=True)
-      os.system(code.replace('!pip', 'pip'))
     if 'import' in code:
       python_code = code
   id += 1
@@ -50,6 +47,16 @@ def chat_python(file, need):
   [shutil.copy(f, f'temp/{id}/') for f in file]
   os.chdir(f'temp/{id}')
   old_files = os.listdir('.')
+  # 安装相关依赖
+  install_pkg = re.findall(r'pip install (.*)', answer, flags=re.M)
+  txt_pkg = re.findall(r'`(.*?)`', answer, flags=re.M)
+  pkgs = install_pkg + txt_pkg
+  pkgs = [pkg for pkg in pkgs if (pkg and '.' not in pkg)]
+  pkgs = [pkg.replace('pip install ', '') for pkg in pkgs]
+  pkgs = list(set(pkgs))
+  for pkg in pkgs:
+    print(f'【id_{id}】install------------------', pkg, flush=True)
+    os.system(f'pip install {pkg}')
   # 执行python代码
   print(f'【id_{id}】python------------------', flush=True)
   os.system('python python_code.py')
@@ -68,6 +75,7 @@ if __name__ == '__main__':
     # '167500466772289.mp3',
     ['60223956_p0.png', 'animals-05.f3ffaf95.png'],
     '浙江工商大学432统计学考研真题参考答案2011-2020.pdf',
+    'demo.txt',
   ]
   needs = [
     '等比例切成4张图',
@@ -85,6 +93,7 @@ if __name__ == '__main__':
     '按图片短的一边等比例缩放到200px，然后裁剪长出来的部分，缩放到200x200的正方形',
     # '将所有图片变成暖色调',
     '用pdfplumber把pdf里面的文字提取到一个txt中',
+    '把文本转成一段语音，并输出到mp3',
   ]
   file = 'assets/' + files[-1]
   need = needs[-1]
