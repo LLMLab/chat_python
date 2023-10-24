@@ -25,7 +25,14 @@ def chat_python(file, need):
   msg_temp = '你是一个优秀的python代码解释器，请生成一段可直接运行的python代码，用于处理以下文件，要求为【{need}】, 输入文件名为【{file}】，输出到新的文件里'
   msg = msg_temp.format(need=need, file=[f.replace('\\', '/').split('/')[-1] for f in file])
   answer = chat(msg)
-  python_code = re.findall(r'```python\n([^犭]*?)\n```', answer, flags=re.M)[0]
+  codes = re.findall(r'```.*\n([^犭]*?)\n```', answer, flags=re.M)
+  python_code = None
+  for code in codes:
+    if 'pip install' in code:
+      print(f'【id_{id}】install------------------', code, flush=True)
+      os.system(code.replace('!pip', 'pip'))
+    if 'import' in code:
+      python_code = code
   id += 1
   os.makedirs(f'temp/{id}', exist_ok=True)
   open(f'temp/{id}/python_code.py', 'w', encoding='utf-8').write(python_code)
@@ -44,6 +51,7 @@ def chat_python(file, need):
   os.chdir(f'temp/{id}')
   old_files = os.listdir('.')
   # 执行python代码
+  print(f'【id_{id}】python------------------', flush=True)
   os.system('python python_code.py')
   new_files = os.listdir('.')
   new_files = [f for f in new_files if f not in old_files]
@@ -59,6 +67,7 @@ if __name__ == '__main__':
     '60223956_p0.png',
     # '167500466772289.mp3',
     ['60223956_p0.png', 'animals-05.f3ffaf95.png'],
+    '浙江工商大学432统计学考研真题参考答案2011-2020.pdf',
   ]
   needs = [
     '等比例切成4张图',
@@ -75,6 +84,7 @@ if __name__ == '__main__':
     # '不改变图片比例，保留原图的中间部分，把图片缩放到200x200',
     '按图片短的一边等比例缩放到200px，然后裁剪长出来的部分，缩放到200x200的正方形',
     # '将所有图片变成暖色调',
+    '用pdfplumber把pdf里面的文字提取到一个txt中',
   ]
   file = 'assets/' + files[-1]
   need = needs[-1]
