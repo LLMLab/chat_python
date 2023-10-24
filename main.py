@@ -10,7 +10,7 @@ erniebot.access_token = '3c410ce131fe8d246c47e26fdf932cfd44e95aa8'
 
 def chat(msg, history=[]):
   response = erniebot.ChatCompletion.create(
-      model='ernie-bot',
+      model='ernie-bot-4',
       messages=[*history, {'role': 'user', 'content': msg}]
   )
   return response.result
@@ -49,7 +49,8 @@ def chat_python(file, need):
   old_files = os.listdir('.')
   # 安装相关依赖
   install_pkg = re.findall(r'pip install (.*)', answer, flags=re.M)
-  txt_pkg = re.findall(r'`(.*?)`', answer, flags=re.M)
+  # txt_pkg = re.findall(r'`(.*?)`', answer, flags=re.M)
+  txt_pkg = []
   pkgs = install_pkg + txt_pkg
   pkgs = [pkg for pkg in pkgs if (pkg and '.' not in pkg)]
   pkgs = [pkg.replace('pip install ', '') for pkg in pkgs]
