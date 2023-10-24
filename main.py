@@ -4,6 +4,7 @@ import os
 import requests
 import json
 import shutil
+import subprocess
 
 erniebot.api_type = 'aistudio'
 erniebot.access_token = '3c410ce131fe8d246c47e26fdf932cfd44e95aa8'
@@ -48,7 +49,7 @@ def chat_python(file, need):
   os.chdir(f'temp/{id}')
   old_files = os.listdir('.')
   # 安装相关依赖
-  install_pkg = re.findall(r'pip install (.*)', answer, flags=re.M)
+  install_pkg = re.findall(r'pip install ([A-Za-z- ]*)', answer, flags=re.M)
   # txt_pkg = re.findall(r'`(.*?)`', answer, flags=re.M)
   txt_pkg = []
   pkgs = install_pkg + txt_pkg
@@ -59,8 +60,15 @@ def chat_python(file, need):
     print(f'【id_{id}】install------------------', pkg, flush=True)
     os.system(f'pip install {pkg}')
   # 执行python代码
-  print(f'【id_{id}】python------------------', flush=True)
-  os.system('python python_code.py')
+  # os.system('python python_code.py')
+  result = subprocess.run('python python_code.py', capture_output=True, text=True, shell=True)
+  print(f'【id_{id}】python------------------ result.returncode:', result.returncode, flush=True)
+  if result.stderr:
+    print(f'【id_{id}】python_err------------------', flush=True)
+    print(result.stderr)
+  if result.stdout:
+    print(f'【id_{id}】python_out------------------', flush=True)
+    print(result.stdout)
   new_files = os.listdir('.')
   new_files = [f for f in new_files if f not in old_files]
   print(f'【id_{id}】new_files:', new_files, flush=True)
@@ -75,14 +83,15 @@ if __name__ == '__main__':
     '60223956_p0.png',
     # '167500466772289.mp3',
     ['60223956_p0.png', 'animals-05.f3ffaf95.png'],
-    '浙江工商大学432统计学考研真题参考答案2011-2020.pdf',
-    'demo.txt',
+    # '浙江工商大学432统计学考研真题参考答案2011-2020.pdf',
+    # 'demo.txt',
   ]
   needs = [
     '等比例切成4张图',
     '把图片缩放到200x200',
     '裁剪出中间偏右边的200x200',
     '把图里的人扣出来，背景透明',
+    '加载开源模型，人像分割，把人扣出来，背景透明',
     #  '从网络帮我找一张相似的图片',
     # '把这个音频转成wav格式',
     # '裁剪前30s',
@@ -91,11 +100,14 @@ if __name__ == '__main__':
     # '把这两张图按左右拼接成一张',
     # '把这些图片转成200x200',
     # '不改变图片比例，保留原图的中间部分，把图片缩放到200x200',
-    '按图片短的一边等比例缩放到200px，然后裁剪长出来的部分，缩放到200x200的正方形',
+    # '按图片短的一边等比例缩放到200px，然后裁剪长出来的部分，缩放到200x200的正方形',
     # '将所有图片变成暖色调',
-    '用pdfplumber把pdf里面的文字提取到一个txt中',
-    '把文本转成一段语音，并输出到mp3',
+    # '用pdfplumber把pdf里面的文字提取到一个txt中',
+    # '把文本转成一段语音，并输出到mp3',
   ]
-  file = 'assets/' + files[-1]
+  file = files[-1]
+  if type(file) == str:
+    file = [file]
+  file = ['assets/' + f for f in file]
   need = needs[-1]
   chat_python(file, need)
