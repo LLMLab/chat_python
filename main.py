@@ -11,7 +11,7 @@ erniebot.access_token = '3c410ce131fe8d246c47e26fdf932cfd44e95aa8'
 
 def chat(msg, history=[]):
   response = erniebot.ChatCompletion.create(
-      model='ernie-bot-4',
+      model='ernie-bot-turbo',
       messages=[*history, {'role': 'user', 'content': msg}]
   )
   return response.result
@@ -75,6 +75,15 @@ def chat_python(file, need):
   print(f'【id_{id}】end--------------------', flush=True)
   # 获取绝对路径
   new_files = [os.path.abspath(f) for f in new_files]
+  _new_files = []
+  for f in new_files:
+    if os.path.isdir(f):
+      for _f in os.listdir(f):
+        _new_files.append(f'{f}/{_f}')
+      continue
+    _new_files.append(f)
+  new_files = _new_files
+      
   os.chdir(os.path.dirname(os.path.abspath(__file__)))
   return answer, new_files
 
