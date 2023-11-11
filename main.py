@@ -11,7 +11,7 @@ erniebot.access_token = '3c410ce131fe8d246c47e26fdf932cfd44e95aa8'
 
 def chat(msg, history=[]):
   response = erniebot.ChatCompletion.create(
-      model='ernie-bot-turbo',
+      model='ernie-bot',
       messages=[*history, {'role': 'user', 'content': msg}]
   )
   return response.result
@@ -31,6 +31,7 @@ def chat_python(file, need):
   for code in codes:
     if 'import' in code:
       python_code = code
+  python_code = f'# 预设基础库\nimport os\n# 生成的代码\n{python_code}' # 容易漏掉的import os
   id += 1
   os.makedirs(f'temp/{id}', exist_ok=True)
   open(f'temp/{id}/python_code.py', 'w', encoding='utf-8').write(python_code)
