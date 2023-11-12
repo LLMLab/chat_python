@@ -5,15 +5,49 @@ import requests
 import json
 import shutil
 import subprocess
+import src.func.aistudio as aistudio
 
 erniebot.api_type = 'aistudio'
 erniebot.access_token = '3c410ce131fe8d246c47e26fdf932cfd44e95aa8'
 
-def chat(msg, history=[]):
+functions = [
+    {
+        'name': 'pp_human_seg_v2',
+        'description': "人像分割，把人扣出来，背景透明",
+        'parameters': {
+            'type': 'object',
+            'properties': {
+                'img_path': {
+                    'type': 'string',
+                    'description': "图片路径",
+                },
+            },
+            'required': [
+                'img_path',
+            ],
+        },
+        'responses': {
+            'type': 'object',
+            'properties': {
+                'img_path': {
+                    'type': 'string',
+                    'description': "图片路径",
+                },
+            },
+        },
+    },
+]
+
+def chat(msg, history=[], functions=[]):
   response = erniebot.ChatCompletion.create(
       model='ernie-bot',
-      messages=[*history, {'role': 'user', 'content': msg}]
+      messages=[*history, {'role': 'user', 'content': msg}],
+      functions=functions,
   )
+  if functions:
+    if hasattr(response, 'function_call'):
+      return response.function_call
+    return None
   return response.result
 
 def chat_python(file, need):
@@ -24,52 +58,65 @@ def chat_python(file, need):
   if type(file) == str:
     file = [file]
   msg_temp = '你是一个优秀的python代码解释器，请生成一段可直接运行的python代码，用于处理以下文件，要求为【{need}】, 输入文件名为【{file}】，输出到新的文件里'
+#   msg_temp = '''你是一个优秀的python代码解释器，以下是一些已有的可用的函数：
+# def pp_human_seg_v2(img_path)：人像分割，把人扣出来，背景透明
+# ---
+# 请生成一段可直接运行的python代码，用于处理以下文件，要求为【{need}】, 输入文件名为【{file}】，输出到新的文件里'''
+
   msg = msg_temp.format(need=need, file=[f.replace('\\', '/').split('/')[-1] for f in file])
-  answer = chat(msg)
-  codes = re.findall(r'```.*\n([^犭]*?)\n```', answer, flags=re.M)
-  python_code = None
-  for code in codes:
-    if 'import' in code:
-      python_code = code
-  python_code = f'# 预设基础库\nimport os\n# 生成的代码\n{python_code}' # 容易漏掉的import os
   id += 1
   os.makedirs(f'temp/{id}', exist_ok=True)
-  open(f'temp/{id}/python_code.py', 'w', encoding='utf-8').write(python_code)
-  open(f'temp/{id}/question.md', 'w', encoding='utf-8').write(msg)
-  open(f'temp/{id}/answer.md', 'w', encoding='utf-8').write(answer)
-  open(f'temp/{id}/info.json', 'w', encoding='utf-8').write(json.dumps({
-    'need': need,
-    'file': file,
-  }, indent=2, ensure_ascii=False))
-  # exec(python_code)
-  print(f'【id_{id}】start------------------', flush=True)
-  print(f'【id_{id}】file:', file, flush=True)
-  print(f'【id_{id}】need:', need, flush=True)
-  print(f'【id_{id}】answer:', answer, flush=True)
   [shutil.copy(f, f'temp/{id}/') for f in file]
   os.chdir(f'temp/{id}')
-  old_files = os.listdir('.')
-  # 安装相关依赖
-  install_pkg = re.findall(r'pip install ([A-Za-z- ]*)', answer, flags=re.M)
-  # txt_pkg = re.findall(r'`(.*?)`', answer, flags=re.M)
-  txt_pkg = []
-  pkgs = install_pkg + txt_pkg
-  pkgs = [pkg for pkg in pkgs if (pkg and '.' not in pkg)]
-  pkgs = [pkg.replace('pip install ', '') for pkg in pkgs]
-  pkgs = list(set(pkgs))
-  for pkg in pkgs:
-    print(f'【id_{id}】install------------------', pkg, flush=True)
-    os.system(f'pip install {pkg}')
-  # 执行python代码
-  # os.system('python python_code.py')
-  result = subprocess.run('python python_code.py', capture_output=True, text=True, shell=True)
-  print(f'【id_{id}】python------------------ result.returncode:', result.returncode, flush=True)
-  if result.stderr:
-    print(f'【id_{id}】python_err------------------', flush=True)
-    print(result.stderr)
-  if result.stdout:
-    print(f'【id_{id}】python_out------------------', flush=True)
-    print(result.stdout)
+  function_call = chat(json.dumps(file)+','+need, functions=functions)
+  if function_call and hasattr(aistudio, function_call['name']):
+    # {'name': 'get_current_temperature', 'thoughts': '用户想要知道深圳市今天的天气情况，我可以使用get_current_temperature工具来获取这个信息。', 'arguments': '{"location":"深圳市","unit":"摄氏度"}'}
+    old_files = os.listdir('.')
+    function = getattr(aistudio, function_call['name'])
+    function_result = function(**json.loads(function_call['arguments']))
+    answer = function_call['thoughts']
+  else:
+    answer = chat(msg)
+    codes = re.findall(r'```.*\n([^犭]*?)\n```', answer, flags=re.M)
+    python_code = None
+    for code in codes:
+      if 'import' in code:
+        python_code = code
+    python_code = f'# 预设基础库\nimport os\n# 生成的代码\n{python_code}' # 容易漏掉的import os
+    open(f'temp/{id}/python_code.py', 'w', encoding='utf-8').write(python_code)
+    open(f'temp/{id}/question.md', 'w', encoding='utf-8').write(msg)
+    open(f'temp/{id}/answer.md', 'w', encoding='utf-8').write(answer)
+    open(f'temp/{id}/info.json', 'w', encoding='utf-8').write(json.dumps({
+      'need': need,
+      'file': file,
+    }, indent=2, ensure_ascii=False))
+    # exec(python_code)
+    print(f'【id_{id}】start------------------', flush=True)
+    print(f'【id_{id}】file:', file, flush=True)
+    print(f'【id_{id}】need:', need, flush=True)
+    print(f'【id_{id}】answer:', answer, flush=True)
+    old_files = os.listdir('.')
+    # 安装相关依赖
+    install_pkg = re.findall(r'pip install ([A-Za-z- ]*)', answer, flags=re.M)
+    # txt_pkg = re.findall(r'`(.*?)`', answer, flags=re.M)
+    txt_pkg = []
+    pkgs = install_pkg + txt_pkg
+    pkgs = [pkg for pkg in pkgs if (pkg and '.' not in pkg)]
+    pkgs = [pkg.replace('pip install ', '') for pkg in pkgs]
+    pkgs = list(set(pkgs))
+    for pkg in pkgs:
+      print(f'【id_{id}】install------------------', pkg, flush=True)
+      os.system(f'pip install {pkg}')
+    # 执行python代码
+    # os.system('python python_code.py')
+    result = subprocess.run('python python_code.py', capture_output=True, text=True)
+    print(f'【id_{id}】python------------------ result.returncode:', result.returncode, flush=True)
+    if result.stderr:
+      print(f'【id_{id}】python_err------------------', flush=True)
+      print(result.stderr)
+    if result.stdout:
+      print(f'【id_{id}】python_out------------------', flush=True)
+      print(result.stdout)
   new_files = os.listdir('.')
   new_files = [f for f in new_files if f not in old_files]
   print(f'【id_{id}】new_files:', new_files, flush=True)
