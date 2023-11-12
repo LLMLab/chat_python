@@ -68,12 +68,13 @@ def chat(msg, history=[], functions=[]):
 
 def chat_python(file, need):
   os.chdir(f'.')
-  print(f'【id_{id}】start------------------', flush=True)
-  print(f'【id_{id}】file:', file, flush=True)
-  print(f'【id_{id}】need:', need, flush=True)
   if not os.path.exists('temp'):
     os.mkdir('temp')
   id = len(os.listdir('temp'))
+  id += 1
+  print(f'【id_{id}】start------------------', flush=True)
+  print(f'【id_{id}】file:', file, flush=True)
+  print(f'【id_{id}】need:', need, flush=True)
   if type(file) == str:
     file = [file]
   msg_temp = '你是一个优秀的python代码解释器，请生成一段可直接运行的python代码，用于处理以下文件，要求为【{need}】, 输入文件名为【{file}】，输出到新的文件里'
@@ -82,7 +83,6 @@ def chat_python(file, need):
 # ---
 # 请生成一段可直接运行的python代码，用于处理以下文件，要求为【{need}】, 输入文件名为【{file}】，输出到新的文件里'''
   msg = msg_temp.format(need=need, file=[f.replace('\\', '/').split('/')[-1] for f in file])
-  id += 1
   os.makedirs(f'temp/{id}', exist_ok=True)
   [shutil.copy(f, f'temp/{id}/') for f in file]
   emb = get_embs([need])
@@ -107,7 +107,7 @@ def chat_python(file, need):
     for code in codes:
       if 'import' in code:
         python_code = code
-    python_code = f'# 预设基础库\nimport os\n# 生成的代码\n{python_code}' # 容易漏掉的import os
+    python_code = f'# 预设基础库\nimport os\nimport re\n# 生成的代码\n{python_code}' # 容易漏掉的import os
     open(f'temp/{id}/python_code.py', 'w', encoding='utf-8').write(python_code)
     open(f'temp/{id}/question.md', 'w', encoding='utf-8').write(msg)
     open(f'temp/{id}/answer.md', 'w', encoding='utf-8').write(answer)
