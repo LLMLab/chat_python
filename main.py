@@ -11,33 +11,7 @@ import numpy as np
 erniebot.api_type = 'aistudio'
 erniebot.access_token = '3c410ce131fe8d246c47e26fdf932cfd44e95aa8'
 
-functions = [
-    {
-        'name': 'pp_human_seg_v2',
-        'description': "人像分割，把人扣出来，背景透明",
-        'parameters': {
-            'type': 'object',
-            'properties': {
-                'img_path': {
-                    'type': 'string',
-                    'description': "图片路径",
-                },
-            },
-            'required': [
-                'img_path',
-            ],
-        },
-        'responses': {
-            'type': 'object',
-            'properties': {
-                'img_path': {
-                    'type': 'string',
-                    'description': "图片路径",
-                },
-            },
-        },
-    },
-]
+functions = aistudio.functions
 f_descriptions = [f['description'] for f in functions]
 def get_embs(texts):
   response = erniebot.Embedding.create(
