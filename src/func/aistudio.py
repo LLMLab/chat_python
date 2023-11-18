@@ -1,7 +1,19 @@
 import requests
 import base64
 
-def pp_human_seg_v2(img_path):
+def pp_human_seg_v2(file_paths):
+  out_paths = []
+  for img_path in file_paths:
+    out_paths.append(_pp_human_seg_v2(img_path))
+  return out_paths
+
+def pp_tts(file_paths):
+  out_paths = []
+  for file_path in file_paths:
+    out_paths.append(_pp_tts(file_path))
+  return out_paths
+  
+def _pp_human_seg_v2(file_path):
   url = 'https://aistudio.baidu.com/serving/app/3/run/predict/'
   headers = {
     'Accept': '*/*',
@@ -19,7 +31,7 @@ def pp_human_seg_v2(img_path):
     'sec-ch-ua-mobile': '?0',
     'sec-ch-ua-platform': '"Windows"',
   }
-  img = open(img_path, 'rb').read()
+  img = open(file_path, 'rb').read()
   base64_jpg_prefix = 'data:image/jpeg;base64,'
   base64_png_prefix = 'data:image/png;base64,'
   # 转换为base64
@@ -28,11 +40,12 @@ def pp_human_seg_v2(img_path):
   out_img_base64 = result.json()['data'][0].replace(base64_png_prefix, '')
   # 转为图片
   out_img = base64.b64decode(out_img_base64)
-  open('out.png', 'wb').write(out_img)
-  return 'out.png'
+  out_name = file_path.split('/')[-1].split('\\')[-1].split('.')[0] + '_human_seg.png'
+  open(out_name, 'wb').write(out_img)
+  return out_name
 
-def pp_tts(file_name):
-  text = open(file_name, 'r', encoding='utf-8').read()
+def _pp_tts(file_path):
+  text = open(file_path, 'r', encoding='utf-8').read()
   url = 'https://aistudio.baidu.com/serving/app/10/run/predict/'
   headers = {
     'Accept': '*/*',
@@ -56,23 +69,28 @@ def pp_tts(file_name):
   out_name = result.json()['data'][0]['name']
   url = 'https://aistudio.baidu.com/serving/app/10/file=' + out_name
   result = requests.get(url, headers=headers)
-  open('out.wav', 'wb').write(result.content)
-  return 'out.wav'
+  out_name = file_path.split('/')[-1].split('\\')[-1].split('.')[0] + '_tts.wav'
+  open(out_name, 'wb').write(result.content)
+  return out_name
 
 functions = [
     {
         'name': 'pp_human_seg_v2',
-        'description': "人像分割，把人扣出来，背景透明",
+        'description': "把人扣出来，背景变透明",
         'parameters': {
             'type': 'object',
             'properties': {
-                'img_path': {
-                    'type': 'string',
-                    'description': "图片路径",
+                'file_paths': {
+                    'type': 'array',
+                    'items': {
+                        'type': 'string',
+                        'description': "图片路径",
+                    },
+                    'description': "图片路径数组",
                 },
             },
             'required': [
-                'img_path',
+                'file_paths',
             ],
         },
         'responses': {
@@ -91,13 +109,17 @@ functions = [
         'parameters': {
             'type': 'object',
             'properties': {
-                'file_name': {
-                    'type': 'string',
-                    'description': "待转换的文字文件路径",
+                'file_paths': {
+                    'type': 'array',
+                    'items': {
+                        'type': 'string',
+                        'description': "待转换的文字文件路径",
+                    },
+                    'description': "待转换的文字文件路径数组",
                 },
             },
             'required': [
-                'file_name',
+                'file_paths',
             ],
         },
         'responses': {
