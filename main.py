@@ -31,6 +31,7 @@ def get_sim_emb(emb, embs):
 def chat(msg, history=[], functions=[]):
   response = erniebot.ChatCompletion.create(
       model='ernie-bot',
+      # model='ernie-bot-4',
       messages=[*history, {'role': 'user', 'content': msg}],
       functions=functions,
   )
@@ -64,7 +65,7 @@ def chat_python(file, need):
   # 和已有的函数介绍相似度大于阈值，就尝试走函数调用
   func_max_sim = get_sim_emb(emb, f_embs)
   print(f'【id_{id}】func_max_sim:', func_max_sim, flush=True)
-  if func_max_sim > 0.55:
+  if func_max_sim > 0.6:
     function_call = chat(json.dumps(file)+','+need, functions=functions)
   if function_call and hasattr(aistudio, function_call['name']):
     # {'name': 'get_current_temperature', 'thoughts': '用户想要知道深圳市今天的天气情况，我可以使用get_current_temperature工具来获取这个信息。', 'arguments': '{"location":"深圳市","unit":"摄氏度"}'}

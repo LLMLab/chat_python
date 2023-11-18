@@ -31,7 +31,8 @@ def pp_human_seg_v2(img_path):
   open('out.png', 'wb').write(out_img)
   return 'out.png'
 
-def pp_tts(text):
+def pp_tts(file_name):
+  text = open(file_name, 'r', encoding='utf-8').read()
   url = 'https://aistudio.baidu.com/serving/app/10/run/predict/'
   headers = {
     'Accept': '*/*',
@@ -90,13 +91,13 @@ functions = [
         'parameters': {
             'type': 'object',
             'properties': {
-                'text': {
+                'file_name': {
                     'type': 'string',
-                    'description': "待转换的文字",
+                    'description': "待转换的文字文件路径",
                 },
             },
             'required': [
-                'text',
+                'file_name',
             ],
         },
         'responses': {
