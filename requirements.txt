@@ -3,3 +3,4 @@ moviepy
 pydub
 PyPDF2==2
 pdfminer
+gradio==3.44
